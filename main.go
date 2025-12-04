@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"log"
+
+	"NOSQL_arbre_genealogique/database"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	database.Connect()
+	log.Println("🚀 Application démarrée")
 }
