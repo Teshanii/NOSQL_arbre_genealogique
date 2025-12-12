@@ -3,7 +3,8 @@ package main
 import (
 	"log"
 
-	"NOSQL_arbre_genealogique/database"
+	//"NOSQL_arbre_genealogique/database"
+	"Autriche/database"
 )
 
 func main() {
