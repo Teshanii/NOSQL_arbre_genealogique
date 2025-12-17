@@ -42,8 +42,11 @@ func main() {
 	// 6) Insérer en base
 	_, err = coll.InsertMany(ctx, docs)
 	if err != nil {
-		log.Fatal("Erreur insertion Mongo:", err)
+		log.Println(" Données déjà importées ou erreur:", err)
+	} else {
+		log.Println(" Import terminé !")
 	}
 
-	log.Println(" Import terminé !")
+	// 7) Afficher le menu
+	ShowMenu()
 }

@@ -83,3 +83,25 @@ func getYear(date string) int {
 	}
 	return year
 }
+
+// Trouver les dates impossibles (ici on verifie que ya pas qlq qui est né dans le futur genre incoherenece )
+func GetInconsistencies() ([]string, error) {
+	collection := database.IndividualsCollection()
+	var results []models.Individual
+	var problems []string
+
+	cursor, err := collection.Find(context.Background(), bson.M{}) // on recuperer tous les individus
+	if err != nil {
+		return nil, err
+	}
+	cursor.All(context.Background(), &results) // on les met tous dans resultats
+
+	for _, person := range results { // pour chaque personne
+		//on ignore les postions
+		if person.BirthDate != "" && getYear(person.BirthDate) > 2025 { // si ce nest pas vide
+			problems = append(problems, person.FirstName+" "+person.LastName+" : né dans le futur") // on rajoute dans problemes person.FirstName+" "+person.LastName
+		}
+	}
+
+	return problems, nil
+}

@@ -60,7 +60,9 @@ func GetChildren(parentID string) ([]models.Individual, error) {
 	// Pour chaque relation, trouver l'enfant
 	for _, rel := range relations {
 		var child models.Individual
-		err := indCollection.FindOne(context.Background(), bson.M{"_id": rel.ChildID})
+		err := indCollection.FindOne(context.Background(), bson.M{"_id": rel.ChildID}) //Decode traduit le BSON en une variable Go qu'on peut utiliser.
+		//met le résultat dans la variable child
+		//Decode a besoin de l'adresse pour savoir où mettre le résultat.
 		if err == nil {
 			children = append(children, child)
 		}
