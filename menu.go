@@ -1,8 +1,10 @@
 package main
 
 import (
+	"Autriche/database"
 	"Autriche/models"
 	"Autriche/operations"
+	"context"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -173,39 +175,43 @@ func voirEnfants() {
 }
 
 func afficherArbreComplet() {
+	ctx := context.Background()
+
 	fmt.Println("\n--- ARBRE GÉNÉALOGIQUE COMPLET ---")
 
-	// Ancêtre commun : Jeremy Sawayn
-	ancestreID := "6561fa19-3a9e-4073-aaf6-a53442a25927"
+	coll := database.IndividualsCollection()
+	var root models.Individual
+	if err := coll.FindOne(ctx, bson.M{}).Decode(&root); err != nil {
+		fmt.Println("Impossible de trouver un ancêtre:", err)
+		return
+	}
 
-	ancetre, err := operations.FindIndividualByID(ancestreID)
+	visited := make(map[string]bool)
+	tree, err := operations.BuildTree(ctx, root.ID, visited)
 	if err != nil {
-		fmt.Println("Erreur :", err)
+		fmt.Println("Erreur BuildTree:", err)
 		return
 	}
 
-	fmt.Printf("\nANCÊTRE COMMUN : %s %s (né: %s)\n", ancetre.FirstName, ancetre.LastName, ancetre.BirthDate)
-
-	// Afficher les descendants
-	afficherDescendants(ancestreID, 1)
+	operations.PrintTree(tree, 0)
 }
 
-func afficherDescendants(parentID string, niveau int) {
-	enfants, err := operations.GetChildren(parentID)
-	if err != nil || len(enfants) == 0 {
-		return
-	}
+// func afficherDescendants(parentID string, niveau int) {
+// 	enfants, err := operations.GetChildren(parentID)
+// 	if err != nil || len(enfants) == 0 {
+// 		return
+// 	}
 
-	indent := ""
-	for i := 0; i < niveau; i++ {
-		indent += "  "
-	}
+// 	indent := ""
+// 	for i := 0; i < niveau; i++ {
+// 		indent += "  "
+// 	}
 
-	for _, e := range enfants {
-		fmt.Printf("%s└── %s %s (né: %s)\n", indent, e.FirstName, e.LastName, e.BirthDate)
-		afficherDescendants(e.ID, niveau+1)
-	}
-}
+// 	for _, e := range enfants {
+// 		fmt.Printf("%s +- %s %s (né: %s)\n", indent, e.FirstName, e.LastName, e.BirthDate)
+// 		afficherDescendants(e.ID, niveau+1)
+// 	}
+// }
 
 func afficherTousIndividus() {
 	fmt.Println("\n--- TOUS LES INDIVIDUS ---")
