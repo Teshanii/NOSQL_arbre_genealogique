@@ -4,6 +4,8 @@ import (
 	"Autriche/models"
 	"Autriche/operations"
 	"fmt"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func ShowMenu() {
@@ -16,10 +18,13 @@ func ShowMenu() {
 		fmt.Println("3. Chercher par période de naissance")
 		fmt.Println("4. Voir les parents d'une personne")
 		fmt.Println("5. Voir les enfants d'une personne")
-		fmt.Println("6. Ajouter une personne")
-		fmt.Println("7. Supprimer une personne")
-		fmt.Println("8. Exporter en JSON")
-		fmt.Println("9. Détecter les incohérences")
+		fmt.Println("6. Afficher l'arbre complet")
+		fmt.Println("7. Afficher tous les individus")
+		fmt.Println("8. Ajouter une personne")
+		fmt.Println("9. Modifier une personne")
+		fmt.Println("10. Supprimer une personne")
+		fmt.Println("11. Exporter en JSON")
+		fmt.Println("12. Détecter les incohérences")
 		fmt.Println("0. Quitter")
 		fmt.Println("=========================================")
 		fmt.Print("Votre choix : ")
@@ -37,12 +42,18 @@ func ShowMenu() {
 		case 5:
 			voirEnfants()
 		case 6:
-			ajouterPersonne()
+			afficherArbreComplet()
 		case 7:
-			supprimerPersonne()
+			afficherTousIndividus()
 		case 8:
-			exporterJSON()
+			ajouterPersonne()
 		case 9:
+			modifierPersonne()
+		case 10:
+			supprimerPersonne()
+		case 11:
+			exporterJSON()
+		case 12:
 			detecterIncoherences()
 		case 0:
 			fmt.Println("Au revoir !")
@@ -161,6 +172,57 @@ func voirEnfants() {
 	}
 }
 
+func afficherArbreComplet() {
+	fmt.Println("\n--- ARBRE GÉNÉALOGIQUE COMPLET ---")
+
+	// Ancêtre commun : Jeremy Sawayn
+	ancestreID := "6561fa19-3a9e-4073-aaf6-a53442a25927"
+
+	ancetre, err := operations.FindIndividualByID(ancestreID)
+	if err != nil {
+		fmt.Println("Erreur :", err)
+		return
+	}
+
+	fmt.Printf("\nANCÊTRE COMMUN : %s %s (né: %s)\n", ancetre.FirstName, ancetre.LastName, ancetre.BirthDate)
+
+	// Afficher les descendants
+	afficherDescendants(ancestreID, 1)
+}
+
+func afficherDescendants(parentID string, niveau int) {
+	enfants, err := operations.GetChildren(parentID)
+	if err != nil || len(enfants) == 0 {
+		return
+	}
+
+	indent := ""
+	for i := 0; i < niveau; i++ {
+		indent += "  "
+	}
+
+	for _, e := range enfants {
+		fmt.Printf("%s└── %s %s (né: %s)\n", indent, e.FirstName, e.LastName, e.BirthDate)
+		afficherDescendants(e.ID, niveau+1)
+	}
+}
+
+func afficherTousIndividus() {
+	fmt.Println("\n--- TOUS LES INDIVIDUS ---")
+
+	results, err := operations.SearchByName("")
+	if err != nil {
+		fmt.Println("Erreur :", err)
+		return
+	}
+
+	for i, p := range results {
+		fmt.Printf("%d. %s %s (né: %s) - %s\n", i+1, p.FirstName, p.LastName, p.BirthDate, p.Gender)
+	}
+
+	fmt.Printf("\nTotal : %d individus\n", len(results))
+}
+
 func ajouterPersonne() {
 	var id, prenom, nom, dateNaissance, genre string
 
@@ -190,6 +252,63 @@ func ajouterPersonne() {
 	}
 
 	fmt.Println("Personne ajoutée !")
+}
+
+func modifierPersonne() {
+	var id string
+	fmt.Print("Entrez l'ID de la personne à modifier : ")
+	fmt.Scan(&id)
+
+	// Vérifier que la personne existe
+	personne, err := operations.FindIndividualByID(id)
+	if err != nil {
+		fmt.Println("Personne non trouvée")
+		return
+	}
+
+	fmt.Printf("Personne trouvée : %s %s\n", personne.FirstName, personne.LastName)
+	fmt.Println("\nQue voulez-vous modifier ?")
+	fmt.Println("1. Prénom")
+	fmt.Println("2. Nom")
+	fmt.Println("3. Date de naissance")
+	fmt.Println("4. Genre")
+
+	var choix int
+	fmt.Print("Votre choix : ")
+	fmt.Scan(&choix)
+
+	var nouvelleValeur string
+	var champ string
+
+	switch choix {
+	case 1:
+		fmt.Print("Nouveau prénom : ")
+		fmt.Scan(&nouvelleValeur)
+		champ = "first_name"
+	case 2:
+		fmt.Print("Nouveau nom : ")
+		fmt.Scan(&nouvelleValeur)
+		champ = "last_name"
+	case 3:
+		fmt.Print("Nouvelle date (YYYY-MM-DD) : ")
+		fmt.Scan(&nouvelleValeur)
+		champ = "birth_date"
+	case 4:
+		fmt.Print("Nouveau genre (male/female) : ")
+		fmt.Scan(&nouvelleValeur)
+		champ = "gender"
+	default:
+		fmt.Println("Choix invalide")
+		return
+	}
+
+	err = operations.UpdateIndividual(id, bson.M{champ: nouvelleValeur})
+	if err != nil {
+		fmt.Println("Erreur :", err)
+		return
+	}
+
+	fmt.Println("Personne modifiée !")
 }
 
 func supprimerPersonne() {
